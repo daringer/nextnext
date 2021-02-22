@@ -10,6 +10,13 @@ copy-dev:
 	scp $(DEBPKG) nextuser@192.168.10.50:/tmp
 	ssh root@192.168.10.50 -- dpkg -i /tmp/$(DEBPKG)
 
+update-daemon:
+	ssh root@192.168.10.50 -- systemctl stop nextbox-daemon
+	ssh root@192.168.10.50 -- rm -rf /usr/lib/python3/dist-packages/nextbox_daemon/__pycache__
+	scp -r src/nextbox_daemon/*.py root@192.168.10.50:/usr/lib/python3/dist-packages/nextbox_daemon/
+	ssh root@192.168.10.50 -- systemctl start nextbox-daemon
+	
+
 start-dev-docker: dev-image
 	-docker stop $(IMAGE_NAME)
 	#-docker rm $(IMAGE_NAME)
@@ -29,9 +36,9 @@ dev-image:
 
 
 src/app/nextbox: 
-	wget https://github.com/Nitrokey/nextbox-app/releases/download/v0.3.0/nextbox-0.3.0.tar.gz
 	mkdir -p src/app
-	tar xvf nextbox-0.3.0.tar.gz -C src/app 
+	cd src/ && \
+		git clone git@github.com:Nitrokey/nextbox-app.git app
 
 $(DEBPKG): src/app/nextbox src/nextbox_daemon src/debian/control src/debian/rules src/debian/dirs src/debian/install
 	# -us -uc for non signed build
@@ -51,6 +58,7 @@ $(DEBPKG): src/app/nextbox src/nextbox_daemon src/debian/control src/debian/rule
 
 clean:
 	rm -f dev-image start-dev-docker
+	rm -rf src/app
 	rm -f nextbox_$(VERSION)-1_all.deb
 	rm -f nextbox_$(VERSION)-1_arm64.buildinfo
 	rm -f nextbox_$(VERSION)-1_arm64.changes
