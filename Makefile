@@ -18,10 +18,10 @@ update-daemon:
 
 update-app: src/app/nextbox/node_modules
 	make -C src/app/nextbox build-js
-	ssh root@192.168.10.50 -- rm -rf /srv/nextcloud/custom_apps/nextbox
-	rsync -r --info=progress --exclude='node_modules/*' --exclude='vendor/*' src/app/nextbox \
-		root@192.168.10.50:/srv/nextcloud/custom_apps
-	ssh root@192.168.10.50 -- chown www-data.www-data -R /srv/nextcloud/custom_apps/nextbox
+	ssh root@192.168.10.50 -- rm -rf /srv/nextcloud/custom_apps/nextbox/js
+	rsync -r --info=progress --exclude='node_modules/*' --exclude='vendor/*' src/app/nextbox/js \
+		root@192.168.10.50:/srv/nextcloud/custom_apps/nextbox
+	#ssh root@192.168.10.50 -- chown root.root -R /srv/nextcloud/custom_apps/nextbox
 
 src/app/nextbox/node_modules:
 	cd src/app/nextbox && \
