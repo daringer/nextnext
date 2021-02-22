@@ -1,0 +1,3 @@
+#!/bin/sh
+
+chown www-data.www-data -R /srv/nextcloud/custom_apps/nextbox

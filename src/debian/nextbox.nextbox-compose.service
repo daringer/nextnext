@@ -1,0 +1,17 @@
+[Unit]
+Description=nextbox-compose
+Requires=docker.service
+After=docker.service
+
+[Service]
+Restart=always
+
+#User=nextbox
+#Group=nextbox
+
+ExecStartPre=/usr/bin/docker-compose -f /usr/lib/nextbox-compose/docker-compose.yml down -v
+ExecStart=/usr/bin/docker-compose -f /usr/lib/nextbox-compose/docker-compose.yml up
+ExecStop=/usr/bin/docker-compose -f /usr/lib/nextbox-compose/docker-compose.yml down -v
+
+[Install]
+WantedBy=multi-user.target
