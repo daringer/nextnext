@@ -6,7 +6,7 @@ IMAGE_NAME=dev-docker
 all: src/app/nextbox $(DEBPKG) 
 	# done
 
-copy-dev:
+install-deb:
 	scp $(DEBPKG) nextuser@192.168.10.50:/tmp
 	ssh root@192.168.10.50 -- dpkg -i /tmp/$(DEBPKG)
 
@@ -15,7 +15,17 @@ update-daemon:
 	ssh root@192.168.10.50 -- rm -rf /usr/lib/python3/dist-packages/nextbox_daemon/__pycache__
 	scp -r src/nextbox_daemon/*.py root@192.168.10.50:/usr/lib/python3/dist-packages/nextbox_daemon/
 	ssh root@192.168.10.50 -- systemctl start nextbox-daemon
-	
+
+update-app: src/app/nextbox/package-lock.json
+	make -f src/app/nextbox/Makefile build-js
+	ssh root@192.168.10.50 -- rm -rf /srv/nextcloud/custom_apps/nextbox
+	rsync -r --info=progress --exclude='node_modules/*' --exclude='vendor/*' src/app/nextbox \
+		root@192.168.10.50:/srv/nextcloud/custom_apps
+	ssh root@192.168.10.50 -- chown www-data.www-data -R /srv/nextcloud/custom_apps/nextbox
+
+src/app/nextbox/package-lock.json: src/app/nextbox
+	cd src/app/nextbox && \
+		npm install
 
 start-dev-docker: dev-image
 	-docker stop $(IMAGE_NAME)
@@ -37,8 +47,8 @@ dev-image:
 
 src/app/nextbox: 
 	mkdir -p src/app
-	cd src/app && \
-		git clone https://github.com/Nitrokey/nextbox-app.git	nextbox
+	cd src && \
+		git clone https://github.com/Nitrokey/nextbox-app.git	app
 	#git clone git@github.com:Nitrokey/nextbox-app.git nextbox
 
 $(DEBPKG): src/app/nextbox src/nextbox_daemon src/debian/control src/debian/rules src/debian/dirs src/debian/install
