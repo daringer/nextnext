@@ -16,14 +16,14 @@ update-daemon:
 	scp -r src/nextbox_daemon/*.py root@192.168.10.50:/usr/lib/python3/dist-packages/nextbox_daemon/
 	ssh root@192.168.10.50 -- systemctl start nextbox-daemon
 
-update-app: src/app/nextbox/package-lock.json
-	make -f src/app/nextbox/Makefile build-js
+update-app: src/app/nextbox/node_modules
+	make -C src/app/nextbox build-js
 	ssh root@192.168.10.50 -- rm -rf /srv/nextcloud/custom_apps/nextbox
 	rsync -r --info=progress --exclude='node_modules/*' --exclude='vendor/*' src/app/nextbox \
 		root@192.168.10.50:/srv/nextcloud/custom_apps
 	ssh root@192.168.10.50 -- chown www-data.www-data -R /srv/nextcloud/custom_apps/nextbox
 
-src/app/nextbox/package-lock.json: src/app/nextbox
+src/app/nextbox/node_modules:
 	cd src/app/nextbox && \
 		npm install
 
