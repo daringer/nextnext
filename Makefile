@@ -37,8 +37,9 @@ dev-image:
 
 src/app/nextbox: 
 	mkdir -p src/app
-	cd src/ && \
-		git clone git@github.com:Nitrokey/nextbox-app.git app
+	cd src/app && \
+		git clone https://github.com/Nitrokey/nextbox-app.git	nextbox
+	#git clone git@github.com:Nitrokey/nextbox-app.git nextbox
 
 $(DEBPKG): src/app/nextbox src/nextbox_daemon src/debian/control src/debian/rules src/debian/dirs src/debian/install
 	# -us -uc for non signed build
