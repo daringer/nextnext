@@ -21,7 +21,22 @@ update-app: src/app/nextbox/node_modules
 	ssh root@192.168.10.50 -- rm -rf /srv/nextcloud/custom_apps/nextbox/js
 	rsync -r --info=progress --exclude='node_modules/*' --exclude='vendor/*' src/app/nextbox/js \
 		root@192.168.10.50:/srv/nextcloud/custom_apps/nextbox
+	rsync -r --info=progress --exclude='node_modules/*' --exclude='vendor/*' src/app/nextbox/lib/Controller \
+		root@192.168.10.50:/srv/nextcloud/custom_apps/nextbox/lib
 	#ssh root@192.168.10.50 -- chown root.root -R /srv/nextcloud/custom_apps/nextbox
+
+watch-update-app:
+	while true; do \
+		inotifywait -e MODIFY --fromfile watch-files-app; \
+		make update-app; \
+	done 
+ 
+watch-update-daemon:
+	while true; do \
+		inotifywait -e MODIFY `find src/nextbox_daemon/ -name "*.py"`; \
+		make update-daemon; \
+  done
+
 
 src/app/nextbox/node_modules:
 	cd src/app/nextbox && \

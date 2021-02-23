@@ -4,6 +4,7 @@ import re
 from pathlib import Path
 from functools import wraps
 import signal
+import time
 
 import shutil
 import socket
@@ -31,6 +32,10 @@ from nextbox_daemon.jobs import JobManager, TrustedDomainsJob, ProxySSHJob, Upda
 
 # config load
 cfg = Config(CONFIG_PATH)
+
+job_mgr = JobManager(cfg)
+job_queue = Queue()
+worker = Worker(job_queue, job_mgr)
 
 app = Flask(__name__)
 app.secret_key = "123456-nextbox-123456" #cfg["secret_key"]
@@ -73,14 +78,14 @@ def after_request_func(response):
 ### end CORS section
 
 
-
 # decorator for authenticated access
 def requires_auth(f):
     @wraps(f)
     def decorated(*args, **kwargs):
-        if request.remote_addr != "127.0.0.1":
-            # abort(403)
-            return error("not allowed")
+        #if request.remote_addr != "127.0.0.1":
+        #    # abort(403)
+        #    return error("not allowed")
+        print(request.remote_addr)
 
         return f(*args, **kwargs)
     return decorated
@@ -356,7 +361,10 @@ def service_operation(name, operation):
 def handle_config():
     if request.method == "GET":
         data = dict(cfg["config"])
-        data["conf"] = Path(DDCLIENT_CONFIG_PATH).read_text("utf-8").split("\n")
+        try:
+            data["conf"] = Path(DDCLIENT_CONFIG_PATH).read_text("utf-8").split("\n")
+        except FileNotFoundError as e:
+            data["conf"] = ""
         return success(data=data)
 
     # save dyndns related values to configuration
@@ -604,28 +612,30 @@ def https_disable():
     return success("HTTPS disabled")
 
 
-def signal_handler(signal, frame):
+def signal_handler(sig, frame):
+    global job_queue, worker
+
     print("Exit handler, delivering worker exit job now")
     job_queue.put("exit")
-    w.join()
+    worker.join()
     print("Joined worker - exiting now...")
+    
     sys.exit(1)
-
 
 def main():
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
 
-    job_mgr = JobManager(cfg)
-    job_mgr.register_job(TrustedDomainsJob)
-    job_mgr.register_job(ProxySSHJob)
+    #####job_mgr.register_job(TrustedDomainsJob)
+    #####job_mgr.register_job(ProxySSHJob)
     #job_mgr.register_job(UpdateJob)
 
-    job_queue = Queue()
-    w = Worker(job_queue, job_mgr)
-    w.start()
+    
+    worker.start()
 
     app.run(host="0.0.0.0", port=18585, debug=True, threaded=True, processes=1, use_reloader=False)
+
+    signal.pause()
 
 
 if __name__ == "__main__":

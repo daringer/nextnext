@@ -24,6 +24,8 @@ class Worker(Thread):
                 sleep(1)
                 continue
 
+            print("JOB: ", job_name)
+
             # special job "exit" will stop the worker-queue
             if job_name == "exit":
                 break
