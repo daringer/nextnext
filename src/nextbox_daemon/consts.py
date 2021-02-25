@@ -18,6 +18,7 @@ DDCLIENT_BIN = "ddclient"
 DDCLIENT_SERVICE = "ddclient.service"
 
 NEXTBOX_SERVICE = "nextbox-daemon.service"
+COMPOSE_SERVICE = "nextbox-compose.service"
 
 DYNDNS_MODES = ["desec", "desec_2", "static", "config", "off",
                 "desec_done", "config_done", "static_done"]

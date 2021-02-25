@@ -3,7 +3,7 @@ DEBPKG=nextbox_$(VERSION)-1_all.deb
 
 IMAGE_NAME=dev-docker
 
-all: src/app/nextbox $(DEBPKG) 
+all: src/app/nextbox/js/nextbox.js $(DEBPKG) 
 	# done
 
 install-deb:
@@ -16,7 +16,7 @@ update-daemon:
 	scp -r src/nextbox_daemon/*.py root@192.168.10.50:/usr/lib/python3/dist-packages/nextbox_daemon/
 	ssh root@192.168.10.50 -- systemctl start nextbox-daemon
 
-update-app: src/app/nextbox/node_modules
+update-app: src/app/nextbox/js/nextbox.js
 	make -C src/app/nextbox build-js
 	ssh root@192.168.10.50 -- rm -rf /srv/nextcloud/custom_apps/nextbox/js
 	rsync -r --info=progress --exclude='node_modules/*' --exclude='vendor/*' src/app/nextbox/js \
@@ -37,20 +37,29 @@ watch-update-daemon:
 		make update-daemon; \
   done
 
+src/app/nextbox/js/nextbox.js: src/app/nextbox/node_modules
+	cd src/app/nextbox && \
+		make build-js
 
-src/app/nextbox/node_modules:
+src/app/nextbox/node_modules: src/app/nextbox
 	cd src/app/nextbox && \
 		npm install
 
+src/app/nextbox: 
+	mkdir -p src
+	cd src && \
+		git clone https://github.com/Nitrokey/nextbox-app.git	app
+
+
 start-dev-docker: dev-image
 	-docker stop $(IMAGE_NAME)
-	#-docker rm $(IMAGE_NAME)
-	touch $@
+	-docker rm $(IMAGE_NAME)
 	docker run --rm --name $(IMAGE_NAME) -d -it \
 		-v /var/run/docker.sock:/var/run/docker.sock \
 		-v $(shell pwd):/build \
 	  -p 8080:80 \
 		$(IMAGE_NAME):stable
+	touch $@
 	
 enter-dev-docker: start-dev-docker
 	docker exec -it $(IMAGE_NAME) bash
@@ -59,12 +68,6 @@ dev-image:
 	docker build --label $(IMAGE_NAME) --tag $(IMAGE_NAME):stable --network host .
 	touch $@
 
-
-src/app/nextbox: 
-	mkdir -p src/app
-	cd src && \
-		git clone https://github.com/Nitrokey/nextbox-app.git	app
-	#git clone git@github.com:Nitrokey/nextbox-app.git nextbox
 
 $(DEBPKG): src/app/nextbox src/nextbox_daemon src/debian/control src/debian/rules src/debian/dirs src/debian/install
 	# -us -uc for non signed build
@@ -88,4 +91,5 @@ clean:
 	rm -f nextbox_$(VERSION)-1_all.deb
 	rm -f nextbox_$(VERSION)-1_arm64.buildinfo
 	rm -f nextbox_$(VERSION)-1_arm64.changes
+	rm -f nextbox_$(VERSION)-1_arm64.buildinfo
 

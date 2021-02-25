@@ -335,7 +335,7 @@ def backup_restore(name):
 @app.route("/service/<name>/<operation>")
 @requires_auth
 def service_operation(name, operation):
-    if name not in ["ddclient", "nextbox-daemon"]:
+    if name not in ["ddclient", "nextbox-daemon", "nextbox-compose"]:
         return error("not allowed")
     if operation not in ["start", "restart", "status", "is-active"]:
         return error("not allowed")
