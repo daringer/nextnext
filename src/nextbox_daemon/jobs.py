@@ -1,12 +1,13 @@
 from datetime import datetime as dt
 from time import sleep
+from pathlib import Path
 
 import psutil
 
 from nextbox_daemon.consts import *
 from nextbox_daemon.command_runner import CommandRunner
 from nextbox_daemon.config import log
-from nextbox_daemon.snapd import SnapsManager
+from nextbox_daemon.nextcloud import Nextcloud
 
 class BaseJob:
     name = None
@@ -30,57 +31,56 @@ class BaseJob:
         raise NotImplementedError()
 
 
-class UpdateJob(BaseJob):
-    name = "UpdateJob"
-    interval = 11
+# class UpdateJob(BaseJob):
+#     name = "UpdateJob"
+#     interval = 11
 
-    def __init__(self):
-        self.snap_mgr = SnapsManager()
-        super().__init__()
+#     def __init__(self):
+#         self.snap_mgr = SnapsManager()
+#         super().__init__()
 
-    def _run(self, cfg):
-        while self.snap_mgr.any_change_running():
-            sleep(1)
-            log.debug("before check&refresh, waiting for change(s) to finish")
+#     def _run(self, cfg):
+#         while self.snap_mgr.any_change_running():
+#             sleep(1)
+#             log.debug("before check&refresh, waiting for change(s) to finish")
 
-        log.debug("checking for needed refresh")
-        updated = self.snap_mgr.check_and_refresh(["nextbox", "nextcloud-nextbox"])
+#         log.debug("checking for needed refresh")
+#         updated = self.snap_mgr.check_and_refresh(["nextbox", "nextcloud-nextbox"])
 
-        if len(updated) > 0:
-            while self.snap_mgr.any_change_running():
-                sleep(1)
-                log.debug("refresh started, waiting for change(s) to finish")
+#         if len(updated) > 0:
+#             while self.snap_mgr.any_change_running():
+#                 sleep(1)
+#                 log.debug("refresh started, waiting for change(s) to finish")
 
-            if "nextbox" in updated:
-                CommandRunner([SYSTEMCTL_BIN, "restart", NEXTBOX_SERVICE], block=True)
-                log.info("restarted nextbox-daemon due to update")
+#             if "nextbox" in updated:
+#                 CommandRunner([SYSTEMCTL_BIN, "restart", NEXTBOX_SERVICE], block=True)
+#                 log.info("restarted nextbox-daemon due to update")
 
-        cr1 = CommandRunner(UPDATE_NEXTBOX_APP_CMD, block=True)
-        if cr1.returncode != 0:
-            cr2 = CommandRunner(INSTALL_NEXTBOX_APP_CMD, block=True)
-            log.info("installed nextbox nextcloud app - wasn't found for update")
+#         cr1 = CommandRunner(UPDATE_NEXTBOX_APP_CMD, block=True)
+#         if cr1.returncode != 0:
+#             cr2 = CommandRunner(INSTALL_NEXTBOX_APP_CMD, block=True)
+#             log.info("installed nextbox nextcloud app - wasn't found for update")
 
 
 class ProxySSHJob(BaseJob):
     name = "ProxySSH"
     interval = 291
 
-    # ssh-keygen -b 4096 -t rsa -f /tmp/sshkey -q -N ""
-    # ssh -p 2215 -n -N -i hello_key -R 43022:localhost:80 nbproxy@mate.nitrokey.com
-
-    ssh_cmd = "ssh -p {ssh_port} -f -N -i {key_path} -R {remote_port}:localhost:{local_port} {host}"
+    ssh_cmd = "ssh -o StrictHostKeyChecking=accept-new -p {ssh_port} -f -N -i {key_path} -R localhost:{remote_port}:localhost:{local_port} {user}@{host}"
 
     def __init__(self):
         self.pid = None
+        self.nc = Nextcloud()
         super().__init__()
 
     def _run(self, cfg):
         data = {
             "ssh_port": 2215,
-            "key_path": "/var/snap/nextbox/current/hello_key",
-            "remote_port": 43022,
+            "key_path": PROXY_KEY_PATH,
+            "remote_port": cfg["config"]["proxy_port"],
             "local_port": 80,
-            "host": "nbproxy@mate.nitrokey.com",
+            "host": "nextbox.link",
+            "user": "proxyuser"
         }
 
         # do nothing except killing process, if proxy_active == False
@@ -119,51 +119,69 @@ class TrustedDomainsJob(BaseJob):
     name = "TrustedDomains"
     interval = 471
 
-    static_entries = ["192.168.*.*", "10.*.*.*", "172.16.*.*"]
+    static_entries = ["192.168.*.*", "10.*.*.*", "172.16.*.*", "172.18.*.*"]
+
+    def __init__(self):
+        self.nc = Nextcloud()
+        super().__init__()
 
     def _run(self, cfg):
-        # my_ip = local_ip()
+        trusted_domains = self.nc.get_config("trusted_domains")
 
-        get_cmd = lambda prop: [OCC_BIN, "config:system:get", prop]
-        set_cmd = lambda prop, idx, val: \
-            [OCC_BIN, "config:system:set", prop, str(idx), "--value", val]
+        default_entry = trusted_domains[0]
 
-        cr = CommandRunner(get_cmd("trusted_domains"), block=True)
-        trusted_domains = [line.strip() for line in cr.output if len(line.strip()) > 0]
-        cr = CommandRunner(get_cmd("proxy_domains"), block=True)
-        proxy_domains = [line.strip() for line in cr.output if len(line.strip()) > 0]
+        entries = [default_entry] + self.static_entries[:]
+        if cfg["config"]["domain"]:
+            entries.append(cfg["config"]["domain"])
 
-        # leave 0-th entry as it is all the time: worst-case fallback
+        if cfg["config"]["proxy_active"]:
+            entries.append(cfg["config"]["proxy_domain"])
 
-        # check if any static entries are missing
-        if any(entry not in trusted_domains for entry in self.static_entries):
-            for idx, entry in enumerate(self.static_entries):
-                log.info(f"adding '{entry}' to 'trusted_domains' with idx: {idx+1}")
-                cr = CommandRunner(set_cmd("trusted_domains", idx+1, entry), block=True)
-                if cr.returncode != 0:
-                    log.warning(f"failed: {cr.info()}")
+        if any(entry not in trusted_domains for entry in entries):
+            self.nc.set_config("trusted_domains", entries)
 
-        # check for dynamic domain, set to idx == len(static) + 1
-        dyn_dom = cfg.get("config", {}).get("domain")
-        idx = len(self.static_entries) + 1
-        if dyn_dom is not None and dyn_dom not in trusted_domains:
-            log.info(f"updating 'trusted_domains' with dynamic domain: '{dyn_dom}'")
-            cr = CommandRunner(set_cmd(idx, dyn_dom),
-                               block=True)
-            if cr.returncode != 0:
-                log.warning(f"failed adding domain ({dyn_dom}) to trusted_domains")
+        # # my_ip = local_ip()
 
-        # check and set proxy domain, set to idx == 1
-        proxy_dom = cfg.get("config", {}).get("proxy_domain")
-        if proxy_dom and cfg.get("config", {}).get("proxy_active"):
-            idx = 1
-            if proxy_dom is not None and proxy_dom not in proxy_domains:
-                log.info(
-                    f"updating 'proxy_domains' with proxy domain: '{proxy_dom}'")
-                cr = CommandRunner(set_cmd(idx, proxy_dom), block=True)
-                if cr.returncode != 0:
-                    log.warning(
-                        f"failed adding domain ({proxy_dom}) to proxy_domains")
+        # get_cmd = lambda prop: [OCC_BIN, "config:system:get", prop]
+        # set_cmd = lambda prop, idx, val: \
+        #     [OCC_BIN, "config:system:set", prop, str(idx), "--value", val]
+
+        # cr = CommandRunner(get_cmd("trusted_domains"), block=True)
+        # trusted_domains = [line.strip() for line in cr.output if len(line.strip()) > 0]
+        # cr = CommandRunner(get_cmd("proxy_domains"), block=True)
+        # proxy_domains = [line.strip() for line in cr.output if len(line.strip()) > 0]
+
+        # # leave 0-th entry as it is all the time: worst-case fallback
+
+        # # check if any static entries are missing
+        # if any(entry not in trusted_domains for entry in self.static_entries):
+        #     for idx, entry in enumerate(self.static_entries):
+        #         log.info(f"adding '{entry}' to 'trusted_domains' with idx: {idx+1}")
+        #         cr = CommandRunner(set_cmd("trusted_domains", idx+1, entry), block=True)
+        #         if cr.returncode != 0:
+        #             log.warning(f"failed: {cr.info()}")
+
+        # # check for dynamic domain, set to idx == len(static) + 1
+        # dyn_dom = cfg.get("config", {}).get("domain")
+        # idx = len(self.static_entries) + 1
+        # if dyn_dom is not None and dyn_dom not in trusted_domains:
+        #     log.info(f"updating 'trusted_domains' with dynamic domain: '{dyn_dom}'")
+        #     cr = CommandRunner(set_cmd(idx, dyn_dom),
+        #                        block=True)
+        #     if cr.returncode != 0:
+        #         log.warning(f"failed adding domain ({dyn_dom}) to trusted_domains")
+
+        # # check and set proxy domain, set to idx == 1
+        # proxy_dom = cfg.get("config", {}).get("proxy_domain")
+        # if proxy_dom and cfg.get("config", {}).get("proxy_active"):
+        #     idx = 1
+        #     if proxy_dom is not None and proxy_dom not in proxy_domains:
+        #         log.info(
+        #             f"updating 'proxy_domains' with proxy domain: '{proxy_dom}'")
+        #         cr = CommandRunner(set_cmd(idx, proxy_dom), block=True)
+        #         if cr.returncode != 0:
+        #             log.warning(
+        #                 f"failed adding domain ({proxy_dom}) to proxy_domains")
 
 
 class JobManager:

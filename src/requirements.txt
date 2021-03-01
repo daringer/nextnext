@@ -4,3 +4,4 @@ psutil
 gpiozero
 RPi.GPIO
 requests
+filelock

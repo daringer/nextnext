@@ -27,7 +27,7 @@ from nextbox_daemon.command_runner import CommandRunner
 from nextbox_daemon.consts import *
 from nextbox_daemon.config import Config, log
 from nextbox_daemon.worker import Worker
-from nextbox_daemon.jobs import JobManager, TrustedDomainsJob, ProxySSHJob, UpdateJob
+from nextbox_daemon.jobs import JobManager, TrustedDomainsJob, ProxySSHJob
 
 
 # config load
@@ -82,6 +82,9 @@ def after_request_func(response):
 def requires_auth(f):
     @wraps(f)
     def decorated(*args, **kwargs):
+        #####################
+        ##################### @TODO
+        #####################
         #if request.remote_addr != "127.0.0.1":
         #    # abort(403)
         #    return error("not allowed")
@@ -344,6 +347,8 @@ def service_operation(name, operation):
         cr = CommandRunner([SYSTEMCTL_BIN, operation, DDCLIENT_SERVICE], block=True)
     elif name == "nextbox-daemon":
         cr = CommandRunner([SYSTEMCTL_BIN, operation, NEXTBOX_SERVICE], block=True)
+    elif name == "nextbox-compose":
+        cr = CommandRunner([SYSTEMCTL_BIN, operation, COMPOSE_SERVICE], block=True)
     else:
         return error("not allowed")
 
@@ -369,6 +374,7 @@ def handle_config():
 
     # save dyndns related values to configuration
     elif request.method == "POST":
+        run_jobs = []
         for key in request.form:
             val = request.form.get(key)
             if key == "conf":
@@ -382,8 +388,13 @@ def handle_config():
                 if key == "dns_mode" and val not in DYNDNS_MODES:
                     log.warning(f"key: 'dns_mode' has invalid value: {val} - skipping")
                     continue
-                elif key == "domain":
-                    job_queue.put("TrustedDomains")
+                
+                elif "domain" in key:
+                    run_jobs.append("TrustedDomains")
+
+                elif key == "proxy_active" and val.lower() == "false":
+                    run_jobs.append("ProxySSH")
+
                 elif val is None:
                     log.debug(f"skipping key: '{key}' -> no value provided")
                     continue
@@ -395,7 +406,57 @@ def handle_config():
                 log.debug(f"saving key: '{key}' with value: '{val}'")
                 cfg.save()
 
+        if len(run_jobs) > 0:
+            for job in run_jobs:
+                job_queue.put(job)
+
         return success("DynDNS configuration saved")
+
+@app.route("/proxy/register", methods=["POST"])
+@requires_auth
+def register_proxy():
+
+    # check/create key
+    kpath = Path(PROXY_PUBKEY_PATH)
+    if not kpath.exists():
+        cr = CommandRunner(PROXY_KEYGEN_CMD, block=True)
+        if cr.returncode != 0:
+            msg = f"cannot generate key-pair at: '{PROXY_KEY_PATH}'"
+            log.error(msg)
+            return error(msg=msg)
+
+    # get public key string
+    pub_key = kpath.open().read().split(" ")[1]
+
+    # assemble data
+    data = {"public_key": pub_key}
+    for key in request.form:
+        if key == "nk_token":
+            data["token"] = request.form.get(key)
+        elif key == "proxy_domain":
+            data["subdomain"] = request.form.get(key).split(".")[0]
+
+    # send register request to proxy-server
+    headers = {"Content-Type": "application/json"}
+    req = urllib.request.Request(PROXY_REGISTER_URL, 
+        data=json.dumps(data).encode("utf-8"), 
+        method="POST", headers=headers)
+    try:
+        res = urllib.request.urlopen(req).read().decode("utf-8")
+    except urllib.error.HTTPError as e:
+        desc = e.read()
+        return error(f"Could not complete proxy registration", data=json.loads(desc))
+    
+    proxy_port = json.loads(res).get("data").get("port")
+    if not proxy_port:
+        return error(f"Could not register at proxy")
+
+    cfg["config"]["proxy_port"] = proxy_port
+    cfg.save()
+    
+    job_queue.put("ProxySSH")
+
+    return success("Proxy successfully registered")
 
 
 @app.route("/dyndns/captcha", methods=["POST"])
@@ -626,11 +687,9 @@ def main():
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
 
-    #####job_mgr.register_job(TrustedDomainsJob)
-    #####job_mgr.register_job(ProxySSHJob)
-    #job_mgr.register_job(UpdateJob)
+    job_mgr.register_job(TrustedDomainsJob)
+    job_mgr.register_job(ProxySSHJob)
 
-    
     worker.start()
 
     app.run(host="0.0.0.0", port=18585, debug=True, threaded=True, processes=1, use_reloader=False)
