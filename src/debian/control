@@ -2,7 +2,7 @@ Source: nextbox
 Maintainer: Markus Meissner - Nitrokey <nextbox@nitrokey.com>
 Section: python
 Priority: optional
-Build-Depends: dh-python, python3-setuptools, python3-all, debhelper (>= 9), dh-systemd (>= 1.3)
+Build-Depends: dh-python, python3-setuptools, python3-all, debhelper (>= 9), dh-systemd (>= 1.3), npm
 Standards-Version: 3.9.6
 
 Package: nextbox

@@ -52,16 +52,18 @@ watch-update-daemon:
 start-dev-docker: dev-image
 	-docker stop $(IMAGE_NAME)
 	-docker rm $(IMAGE_NAME)
+	sleep 1
 	docker run --rm --name $(IMAGE_NAME) -d -it \
-		-v /var/run/docker.sock:/var/run/docker.sock \
+		-v $(HOME)/.gnupg:/root/.gnupg \
 		-v $(shell pwd):/build \
+		-v $(HOME)/.dput.cf:/root/.dput.cf \
 		-p 8080:80 \
 		$(IMAGE_NAME):stable
+	docker exec -it $(IMAGE_NAME) bash
 	
 enter-dev-docker: start-dev-docker
-	docker exec -it $(IMAGE_NAME) bash
 
-dev-image:
+dev-image: Dockerfile
 	docker build --label $(IMAGE_NAME) --tag $(IMAGE_NAME):stable --network host .
 	touch $@
 
@@ -74,6 +76,7 @@ $(DEBPKG): src/app/nextbox src/nextbox_daemon src/debian/control src/debian/rule
 	cd src && \
 		dpkg-buildpackage -S && \
 		fakeroot dpkg-buildpackage -b 
+	debsign -k CC74B7120BFAA36FF42868724C1449F1C9804176 nextbox_$(VERSION)-1_source.changes
 
 deb-clean:
 	rm -f nextbox_$(VERSION)-*_all.*

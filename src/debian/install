@@ -1,2 +1,7 @@
 nextbox-compose /usr/lib/
-app/nextbox /srv/nextcloud/custom_apps
+app/nextbox/lib /srv/nextcloud/custom_apps/nextbox
+app/nextbox/js /srv/nextcloud/custom_apps/nextbox
+app/nextbox/img /srv/nextcloud/custom_apps/nextbox
+app/nextbox/css /srv/nextcloud/custom_apps/nextbox
+app/nextbox/templates /srv/nextcloud/custom_apps/nextbox
+app/nextbox/appinfo /srv/nextcloud/custom_apps/nextbox
