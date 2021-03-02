@@ -2,30 +2,37 @@ VERSION=0.0.2
 DEBPKG=nextbox_$(VERSION)-1_all.deb
 
 IMAGE_NAME=dev-docker
+DEV_DEVICE=192.168.10.50
+DEV_USER=nextuser
+DEV_ROOT_USER=root
 
-all: src/app/nextbox/js/nextbox.js $(DEBPKG) 
-	# done
+all:
+	# do nothing by default
+
+#all: src/app/nextbox/js/nextbox.js $(DEBPKG) 
+#	# done
 
 install-deb:
-	scp $(DEBPKG) nextuser@192.168.10.50:/tmp
-	ssh root@192.168.10.50 -- dpkg -i /tmp/$(DEBPKG)
+	scp $(DEBPKG) $(DEV_USER)@$(DEV_DEVICE):/tmp
+	ssh $(DEV_ROOT_USER)@$(DEV_DEVICE) -- dpkg -i /tmp/$(DEBPKG)
 
 update-daemon:
-	ssh root@192.168.10.50 -- systemctl stop nextbox-daemon
-	ssh root@192.168.10.50 -- rm -rf /usr/lib/python3/dist-packages/nextbox_daemon/__pycache__
-	scp -r src/nextbox_daemon/*.py root@192.168.10.50:/usr/lib/python3/dist-packages/nextbox_daemon/
-	ssh root@192.168.10.50 -- systemctl start nextbox-daemon
+	ssh $(DEV_ROOT_USER)@$(DEV_DEVICE) -- systemctl stop nextbox-daemon
+	ssh $(DEV_ROOT_USER)@$(DEV_DEVICE) -- rm -rf /usr/lib/python3/dist-packages/nextbox_daemon/__pycache__
+	scp -r src/nextbox_daemon/*.py $(DEV_ROOT_USER)@$(DEV_DEVICE):/usr/lib/python3/dist-packages/nextbox_daemon/
+	ssh $(DEV_ROOT_USER)@$(DEV_DEVICE) -- systemctl start nextbox-daemon
 
 update-app: src/app/nextbox/js/nextbox.js
 	make -C src/app/nextbox build-js
-	ssh root@192.168.10.50 -- rm -rf /srv/nextcloud/custom_apps/nextbox/js
+	ssh $(DEV_ROOT_USER)@$(DEV_DEVICE) -- rm -rf /srv/nextcloud/custom_apps/nextbox/js
 	rsync -r --info=progress --exclude='node_modules/*' --exclude='vendor/*' src/app/nextbox/js \
-		root@192.168.10.50:/srv/nextcloud/custom_apps/nextbox
+		$(DEV_ROOT_USER)@$(DEV_DEVICE):/srv/nextcloud/custom_apps/nextbox
 	rsync -r --info=progress --exclude='node_modules/*' --exclude='vendor/*' src/app/nextbox/lib/Controller \
-		root@192.168.10.50:/srv/nextcloud/custom_apps/nextbox/lib
+		$(DEV_ROOT_USER)@$(DEV_DEVICE):/srv/nextcloud/custom_apps/nextbox/lib
 	#ssh root@192.168.10.50 -- chown root.root -R /srv/nextcloud/custom_apps/nextbox
 
 watch-update-app:
+	make -C src
 	while true; do \
 		inotifywait -e MODIFY --fromfile watch-files-app; \
 		make update-app; \
@@ -37,19 +44,10 @@ watch-update-daemon:
 		make update-daemon; \
   done
 
-src/app/nextbox/js/nextbox.js: src/app/nextbox/node_modules
-	cd src/app/nextbox && \
-		make build-js
 
-src/app/nextbox/node_modules: src/app/nextbox
-	cd src/app/nextbox && \
-		npm install
-
-src/app/nextbox: 
-	mkdir -p src
-	cd src && \
-		git clone https://github.com/Nitrokey/nextbox-app.git	app
-
+###
+### debian docker
+###
 
 start-dev-docker: dev-image
 	-docker stop $(IMAGE_NAME)
@@ -57,9 +55,8 @@ start-dev-docker: dev-image
 	docker run --rm --name $(IMAGE_NAME) -d -it \
 		-v /var/run/docker.sock:/var/run/docker.sock \
 		-v $(shell pwd):/build \
-	  -p 8080:80 \
+		-p 8080:80 \
 		$(IMAGE_NAME):stable
-	touch $@
 	
 enter-dev-docker: start-dev-docker
 	docker exec -it $(IMAGE_NAME) bash
@@ -68,28 +65,25 @@ dev-image:
 	docker build --label $(IMAGE_NAME) --tag $(IMAGE_NAME):stable --network host .
 	touch $@
 
+###
+### debian build package
+###
 
-$(DEBPKG): src/app/nextbox src/nextbox_daemon src/debian/control src/debian/rules src/debian/dirs src/debian/install
+$(DEBPKG): src/app/nextbox src/nextbox_daemon src/debian/control src/debian/rules src/debian/dirs src/debian/install src/debian/source/options
 	# -us -uc for non signed build
 	cd src && \
-		fakeroot dpkg-buildpackage -b -us -uc 
+		dpkg-buildpackage -S && \
+		fakeroot dpkg-buildpackage -b 
 
-#src:
-#	dpkg-buildpackage -S
+deb-clean:
+	rm -f nextbox_$(VERSION)-*_all.*
+	rm -f nextbox_$(VERSION)-*_arm64.*
+	rm -f nextbox_$(VERSION)-*_amd64.*
+	rm -f nextbox_$(VERSION)-*_source.*
+	rm -f nextbox_$(VERSION)-*.dsc
+	rm -f nextbox_$(VERSION)-*.tar.gz
 
+deb: $(DEBPKG)
 
-
-#deb: debian
-#	dpkg-buildpackage -rfakeroot -uc -us
-#
-#deb_dist/nextbox-daemon-$(VERSION):
-#	python3 setup.py --command-packages=stdeb.command sdist_dsc --extra-cfg-file stdeb.cfg
-
-clean:
-	rm -f dev-image start-dev-docker
-	rm -rf src/app
-	rm -f nextbox_$(VERSION)-1_all.deb
-	rm -f nextbox_$(VERSION)-1_arm64.buildinfo
-	rm -f nextbox_$(VERSION)-1_arm64.changes
-	rm -f nextbox_$(VERSION)-1_arm64.buildinfo
+.PHONY: deb
 
