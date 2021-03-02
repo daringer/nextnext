@@ -3,8 +3,10 @@ from queue import Empty
 from threading import Thread
 from time import sleep
 import logging
+from queue import Queue
 
-from nextbox_daemon.config import log
+from nextbox_daemon.config import log, cfg
+from nextbox_daemon.jobs import JobManager
 
 class Worker(Thread):
     def __init__(self, job_queue, job_mgr, *v, **kw):
@@ -33,5 +35,8 @@ class Worker(Thread):
             self.job_mgr.handle_job(job_name)
 
 
+job_mgr = JobManager(cfg)
+job_queue = Queue()
+worker = Worker(job_queue, job_mgr)
 
 

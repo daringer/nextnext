@@ -163,3 +163,18 @@ def tail(filepath, num_lines=20):
 
 
 
+
+# decorator for authenticated access
+def requires_auth(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        #####################
+        ##################### @TODO
+        #####################
+        #if request.remote_addr != "127.0.0.1":
+        #    # abort(403)
+        #    return error("not allowed")
+        print(request.remote_addr)
+
+        return f(*args, **kwargs)
+    return decorated

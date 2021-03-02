@@ -6,7 +6,7 @@ import logging
 
 from filelock import FileLock
 
-from nextbox_daemon.consts import LOGGER_NAME, LOG_FILENAME, MAX_LOG_SIZE
+from nextbox_daemon.consts import LOGGER_NAME, LOG_FILENAME, MAX_LOG_SIZE, CONFIG_PATH
 
 class Config(dict):
     def __init__(self, config_path, *va, **kw):
@@ -69,3 +69,6 @@ log_format = logging.Formatter("{asctime} {module} {levelname} => {message}", st
 log_handler.setFormatter(log_format)
 
 log.info("starting nextbox-daemon")
+
+# config load
+cfg = Config(CONFIG_PATH)
