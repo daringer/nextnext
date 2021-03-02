@@ -56,9 +56,9 @@ start-dev-docker: dev-image
 	-docker rm $(IMAGE_NAME)
 	sleep 1
 	docker run --rm --name $(IMAGE_NAME) -d -it \
-		-v $(HOME)/.gnupg:/root/.gnupg \
+		-v $(HOME)/.gnupg:/root/.gnupg,readonly \
+		-v $(HOME)/.dput.cf:/root/.dput.cf,readonly \
 		-v $(shell pwd):/build \
-		-v $(HOME)/.dput.cf:/root/.dput.cf \
 		-p 8080:80 \
 		$(IMAGE_NAME):stable
 	
