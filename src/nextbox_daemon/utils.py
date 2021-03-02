@@ -2,13 +2,14 @@ import os
 from pathlib import Path
 import socket
 import shutil
+from functools import wraps
 
-from flask import jsonify
+from flask import jsonify, request
 
 from nextbox_daemon.consts import NEXTBOX_HDD_LABEL, API_VERSION, CERTBOT_BACKUP_PATH, \
     CERTBOT_CERTS_PATH
 
-from nextbox_daemon.config import log
+from nextbox_daemon.config import log, cfg
 
 
 def error(msg, data=None):
@@ -178,3 +179,47 @@ def requires_auth(f):
 
         return f(*args, **kwargs)
     return decorated
+
+
+
+def check_for_backup_process():
+    global backup_proc
+
+    out = dict(cfg["config"])
+    if backup_proc is None:
+        out["running"] = False
+        return out
+
+    assert isinstance(backup_proc, CommandRunner)
+
+    backup_proc.get_new_output()
+
+    if backup_proc.finished:
+        if backup_proc.returncode == 0:
+            backup_proc.parsed["state"] = "finished"
+
+            cfg["config"]["last_" + backup_proc.user_info] = backup_proc.started
+            cfg.save()
+
+
+            out["last_" + backup_proc.user_info] = backup_proc.started
+            log.info("backup/restore process finished successfully")
+        else:
+            backup_proc.parsed["state"] = "failed: " + backup_proc.parsed.get("unable", "")
+            if "target" in backup_proc.parsed:
+                if os.path.exists(backup_proc.parsed["target"]):
+                    shutil.rmtree(backup_proc.parsed["target"])
+                log.error("backup/restore process failed, logging output: ")
+                for line in backup_proc.output[-30:]:
+                    log.error(line.replace("\n", ""))
+
+
+    out.update(dict(backup_proc.parsed))
+    out["returncode"] = backup_proc.returncode
+    out["running"] = backup_proc.running
+    out["what"] = backup_proc.user_info
+
+    if backup_proc.finished:
+        backup_proc = None
+
+    return out

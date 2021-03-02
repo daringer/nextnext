@@ -1,7 +1,7 @@
 from flask import Blueprint, request
 
 from nextbox_daemon.command_runner import CommandRunner
-from nextbox_daemon.utils import requires_auth, success, error, check_for_backup_process
+from nextbox_daemon.utils import requires_auth, success, error, check_for_backup_process, get_partitions
 from nextbox_daemon.config import cfg, log
 from nextbox_daemon.consts import *
 
@@ -13,7 +13,7 @@ backup_api = Blueprint('backup', __name__)
 @requires_auth
 def backup():
     data = dict(cfg["config"])
-    data["operation"] = check_for_backup_process()
+    #data["operation"] = check_for_backup_process()
     data["found"] = []
 
     if get_partitions()["backup"] is not None:

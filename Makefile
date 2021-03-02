@@ -19,7 +19,9 @@ install-deb:
 update-daemon:
 	ssh $(DEV_ROOT_USER)@$(DEV_DEVICE) -- systemctl stop nextbox-daemon
 	ssh $(DEV_ROOT_USER)@$(DEV_DEVICE) -- rm -rf /usr/lib/python3/dist-packages/nextbox_daemon/__pycache__
-	scp -r src/nextbox_daemon/*.py $(DEV_ROOT_USER)@$(DEV_DEVICE):/usr/lib/python3/dist-packages/nextbox_daemon/
+	ssh $(DEV_ROOT_USER)@$(DEV_DEVICE) -- rm -rf /usr/lib/python3/dist-packages/nextbox_daemon/api/__pycache__
+	rsync -r --info=progress --exclude='__pycache__/*' --exclude='api/__pycache__/*' src/nextbox_daemon \
+		$(DEV_ROOT_USER)@$(DEV_DEVICE):/usr/lib/python3/dist-packages/
 	ssh $(DEV_ROOT_USER)@$(DEV_DEVICE) -- systemctl start nextbox-daemon
 
 update-app: src/app/nextbox/js/nextbox.js
