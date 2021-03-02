@@ -59,9 +59,9 @@ start-dev-docker: dev-image
 		-v $(HOME)/.dput.cf:/root/.dput.cf \
 		-p 8080:80 \
 		$(IMAGE_NAME):stable
-	docker exec -it $(IMAGE_NAME) bash
 	
 enter-dev-docker: start-dev-docker
+	docker exec -it $(IMAGE_NAME) bash
 
 dev-image: Dockerfile
 	docker build --label $(IMAGE_NAME) --tag $(IMAGE_NAME):stable --network host .
@@ -71,12 +71,15 @@ dev-image: Dockerfile
 ### debian build package
 ###
 
-$(DEBPKG): src/app/nextbox src/nextbox_daemon src/debian/control src/debian/rules src/debian/dirs src/debian/install src/debian/source/options
+src/app/nextbox/js/nextbox-main.js:
+	make -C src
+
+$(DEBPKG): src/app/nextbox/js/nextbox-main.js src/nextbox_daemon src/debian/control src/debian/rules src/debian/dirs src/debian/install src/debian/source/options
 	# -us -uc for non signed build
 	cd src && \
 		dpkg-buildpackage -S && \
 		fakeroot dpkg-buildpackage -b 
-	debsign -k CC74B7120BFAA36FF42868724C1449F1C9804176 nextbox_$(VERSION)-1_source.changes
+	#debsign -k CC74B7120BFAA36FF42868724C1449F1C9804176 nextbox_$(VERSION)-1_source.changes
 
 deb-clean:
 	rm -f nextbox_$(VERSION)-*_all.*
@@ -86,7 +89,8 @@ deb-clean:
 	rm -f nextbox_$(VERSION)-*.dsc
 	rm -f nextbox_$(VERSION)-*.tar.gz
 
-deb: $(DEBPKG)
+deb: start-dev-docker
+	docker exec -it $(IMAGE_NAME) make $(DEBPKG)
 
 .PHONY: deb
 
