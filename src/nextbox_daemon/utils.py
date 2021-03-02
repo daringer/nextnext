@@ -12,6 +12,8 @@ from nextbox_daemon.consts import NEXTBOX_HDD_LABEL, API_VERSION, CERTBOT_BACKUP
 from nextbox_daemon.config import log, cfg
 
 
+
+
 def error(msg, data=None):
     msg = [msg]
     return jsonify({
