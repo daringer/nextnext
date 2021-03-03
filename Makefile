@@ -24,8 +24,8 @@ update-daemon:
 		$(DEV_ROOT_USER)@$(DEV_DEVICE):/usr/lib/python3/dist-packages/
 	ssh $(DEV_ROOT_USER)@$(DEV_DEVICE) -- systemctl start nextbox-daemon
 
-update-app: src/app/nextbox/js/nextbox.js
-	make -C src/app/nextbox build-js
+update-app: src/app/nextbox/src/
+	make -C src dev
 	ssh $(DEV_ROOT_USER)@$(DEV_DEVICE) -- rm -rf /srv/nextcloud/custom_apps/nextbox/js
 	rsync -r --info=progress --exclude='node_modules/*' --exclude='vendor/*' src/app/nextbox/js \
 		$(DEV_ROOT_USER)@$(DEV_DEVICE):/srv/nextcloud/custom_apps/nextbox
@@ -34,7 +34,6 @@ update-app: src/app/nextbox/js/nextbox.js
 	#ssh root@192.168.10.50 -- chown root.root -R /srv/nextcloud/custom_apps/nextbox
 
 watch-update-app:
-	make -C src
 	while true; do \
 		inotifywait -e MODIFY --fromfile watch-files-app; \
 		make update-app; \

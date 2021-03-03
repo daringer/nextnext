@@ -1,6 +1,9 @@
 
 all: app/nextbox/js/nextbox-main.js 
 
+dev: 
+	cd app/nextbox && \
+		make build-js
 
 install: app/nextbox/js/nextbox-main.js
 	mkdir -p debian/nextbox/srv/nextcloud/custom_apps
