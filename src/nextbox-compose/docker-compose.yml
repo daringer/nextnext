@@ -15,7 +15,7 @@ services:
     restart: always
 
   app:
-    image: nextcloud:21.0.0-apache
+    image: nextcloud:20.0.8-apache
     restart: always
     extra_hosts:
       - dockerhost:172.18.238.1
