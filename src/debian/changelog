@@ -1,3 +1,9 @@
+nextbox (0.0.2-4) groovy; urgency=low
+
+  * remove postinst
+
+ -- Markus Meissner (Debian) <coder@safemailbox.de>  Sun, 5 Mar 2021 15:02:11 +0000
+
 nextbox (0.0.2-3) groovy; urgency=low
 
   * fixed postinst bug

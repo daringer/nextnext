@@ -1,4 +1,4 @@
-VERSION=0.0.2-2
+VERSION=0.0.2-4
 DEBPKG=nextbox_$(VERSION)_all.deb
 
 IMAGE_NAME=dev-docker
