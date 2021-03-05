@@ -20,8 +20,7 @@ def storage():
 @storage_api.route("/storage/mount/<device>")
 @storage_api.route("/storage/mount/<device>/<name>")
 @requires_auth
-def mount_storage(device, name=None):
-    
+def mount_storage(device, name=None):  
     devs = partitions.block_devices
     mounted = partitions.mounted
     

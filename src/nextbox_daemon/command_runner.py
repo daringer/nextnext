@@ -3,16 +3,20 @@ import subprocess
 import logging
 import queue
 import time
+import shlex
+
 
 from nextbox_daemon.config import log
 
 
 class CommandRunner:
-    def __init__(self, cmd, cb_parse=None, block=False, start=True):
+    def __init__(self, cmd, cb_parse=None, block=False, start=True, shell=False):
         self.block = block
         self.cb = cb_parse
 
         self._parsed = {}
+        if isinstance(cmd, str):
+            cmd = shlex.split(cmd)
         self.cmd = cmd
         self.q_output = queue.Queue()
         self._output = []
@@ -20,6 +24,7 @@ class CommandRunner:
         self.proc = None
         self.started = False
         self.user_info = None
+        self.shell = shell
 
         if start:
             self.start()
@@ -29,7 +34,8 @@ class CommandRunner:
             log.warning(f"trying to start already started: {self.cmd}")
             return False
 
-        self.proc = subprocess.Popen(self.cmd,
+        cmd = self.cmd if not self.shell else shlex.join(self.cmd)
+        self.proc = subprocess.Popen(self.cmd, shell=self.shell,
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
         self.started = time.time()
@@ -100,6 +106,7 @@ class CommandRunner:
             pass
 
         self._output.extend(out)
+        print("INSIDE: ", out)
         return out
 
     def tail(self, num_lines=10):

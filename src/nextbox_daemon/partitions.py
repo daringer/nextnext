@@ -18,8 +18,11 @@ class Partitions:
 
     def get_device_model(self, block_dev):
         try:
-            return (Path("/sys/block") / block_dev / "device/model") \
+            model = (Path("/sys/block") / block_dev / "device/model") \
                 .read_text("utf-8").strip()
+            vendor = (Path("/sys/block") / block_dev / "device/vendor") \
+                .read_text("utf-8").strip()
+            return model + " " + vendor
         except FileNotFoundError:
             return "n/a"
         except Exception as e:
@@ -57,7 +60,7 @@ class Partitions:
                     free = data.f_bfree * data.f_frsize
                     avail = data.f_blocks * data.f_frsize
                 else:
-                    avail, used = None, None
+                    avail, free = None, None
 
                 dct[part] = {
                     "name": part,
