@@ -1,7 +1,7 @@
 [Unit]
 Description=nextbox-compose
-Requires=docker.service
-After=docker.service
+Requires=docker.socket
+After=docker.socket
 
 [Service]
 Restart=always

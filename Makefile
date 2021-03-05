@@ -95,6 +95,7 @@ deb-clean:
 
 deb-src: start-dev-docker
 	docker exec -it $(IMAGE_NAME) make nextbox_$(VERSION)_source.changes
+	docker exec -it $(IMAGE_NAME) make upload
 
 deb: start-dev-docker
 	docker exec -it $(IMAGE_NAME) make $(DEBPKG)
