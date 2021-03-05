@@ -3,12 +3,12 @@ from setuptools import setup
 
 setup(
     name = "nextbox-daemon",
-    version = "0.0.2",
+    version = "0.0.3",
     author = "Markus Meissner - Nitrokey",
     author_email = "nextbox@nitrokey.com",
     description = "The Nitrokey - NextBox System Control Daemon",
     license = "GPL",
-    packages = ["nextbox_daemon"],
+    packages = ["nextbox_daemon", "nextbox_daemon.api"],
     entry_points = {
         'console_scripts' : ['nextbox-daemon = nextbox_daemon.start:main']
     },
