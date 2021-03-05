@@ -1,4 +1,4 @@
-nextbox (0.0.2-5) groovy; urgency=low
+nextbox (0.0.2-6) groovy; urgency=low
 
   * update nextbox-compose service to use docker.socket as requirement
 

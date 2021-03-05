@@ -1,4 +1,4 @@
-VERSION=0.0.2-5
+VERSION=$(shell head -n 1 src/debian/changelog | grep -Eo '[0-9\.\-]*')
 DEBPKG=nextbox_$(VERSION)_all.deb
 
 IMAGE_NAME=dev-docker
