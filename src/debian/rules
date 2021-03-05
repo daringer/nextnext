@@ -7,7 +7,7 @@ export PYBUILD_NAME=nextbox-daemon
 
 binary:
 	dh binary --with python3 --buildsystem=pybuild
-	make
+	#make
 
 override_dh_installsystemd:
 	dh_installsystemd --name=nextbox-daemon

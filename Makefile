@@ -1,5 +1,5 @@
-VERSION=0.0.2
-DEBPKG=nextbox_$(VERSION)-1_all.deb
+VERSION=0.0.2-2
+DEBPKG=nextbox_$(VERSION)_all.deb
 
 IMAGE_NAME=dev-docker
 DEV_DEVICE=192.168.10.50
@@ -55,8 +55,8 @@ start-dev-docker: dev-image
 	-docker rm $(IMAGE_NAME)
 	sleep 1
 	docker run --rm --name $(IMAGE_NAME) -d -it \
-		-v $(HOME)/.gnupg:/root/.gnupg,readonly \
-		-v $(HOME)/.dput.cf:/root/.dput.cf,readonly \
+		-v $(HOME)/.gnupg:/root/.gnupg \
+		-v $(HOME)/.dput.cf:/root/.dput.cf \
 		-v $(shell pwd):/build \
 		-p 8080:80 \
 		$(IMAGE_NAME):stable
@@ -75,23 +75,32 @@ dev-image: Dockerfile
 src/app/nextbox/js/nextbox-main.js:
 	make -C src
 
-$(DEBPKG): src/app/nextbox/js/nextbox-main.js src/nextbox_daemon src/debian/control src/debian/rules src/debian/dirs src/debian/install src/debian/source/options
+$(DEBPKG): nextbox_$(VERSION)_source.changes src/app/nextbox/js/nextbox-main.js src/nextbox_daemon src/debian/control src/debian/rules src/debian/dirs src/debian/install src/debian/source/options
 	# -us -uc for non signed build
 	cd src && \
-		dpkg-buildpackage -S && \
 		fakeroot dpkg-buildpackage -b 
-	#debsign -k CC74B7120BFAA36FF42868724C1449F1C9804176 nextbox_$(VERSION)-1_source.changes
+
+nextbox_$(VERSION)_source.changes:
+	cd src && \
+		dpkg-buildpackage -S
+	debsign -k CBF5C9FD2105C32B1E9CDC2C0303797FE98B51CD nextbox_$(VERSION)_source.changes
 
 deb-clean:
-	rm -f nextbox_$(VERSION)-*_all.*
-	rm -f nextbox_$(VERSION)-*_arm64.*
-	rm -f nextbox_$(VERSION)-*_amd64.*
-	rm -f nextbox_$(VERSION)-*_source.*
-	rm -f nextbox_$(VERSION)-*.dsc
-	rm -f nextbox_$(VERSION)-*.tar.gz
+	rm -f nextbox_$(VERSION)_all.*
+	rm -f nextbox_$(VERSION)_arm64.*
+	rm -f nextbox_$(VERSION)_amd64.*
+	rm -f nextbox_$(VERSION)_source.*
+	rm -f nextbox_$(VERSION).dsc
+	rm -f nextbox_$(VERSION).tar.gz
+
+deb-src: start-dev-docker
+	docker exec -it $(IMAGE_NAME) make nextbox_$(VERSION)_source.changes
 
 deb: start-dev-docker
 	docker exec -it $(IMAGE_NAME) make $(DEBPKG)
 
-.PHONY: deb
+upload:
+	dput ppa:nitrokey/nextbox nextbox_$(VERSION)_source.changes
+
+.PHONY: deb deb-src upload
 

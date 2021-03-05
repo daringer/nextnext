@@ -1,5 +1,17 @@
-nextbox (0.0.2-1) unstable; urgency=low
+nextbox (0.0.2-3) groovy; urgency=low
+
+  * fixed postinst bug
+
+ -- Markus Meissner (Debian) <coder@safemailbox.de>  Sun, 5 Mar 2021 14:11:11 +0000
+
+nextbox (0.0.2-2) groovy; urgency=low
+
+  * changed JS packaging
+
+ -- Markus Meissner (Debian) <coder@safemailbox.de>  Sun, 21 Feb 2021 14:28:48 +0000
+
+nextbox (0.0.2-1) groovy; urgency=low
 
   * source package initial package
 
- -- Markus Meissner <meissner@nitrokey.com>  Sun, 21 Feb 2021 14:28:48 +0000
+ -- Markus Meissner (Debian) <coder@safemailbox.de>  Sun, 21 Feb 2021 14:28:48 +0000
