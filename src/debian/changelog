@@ -1,5 +1,11 @@
 nextbox (0.0.2-5) groovy; urgency=low
 
+  * update nextbox-compose service to use docker.socket as requirement
+
+ -- Markus Meissner (Debian) <coder@safemailbox.de>  Sun, 5 Mar 2021 15:32:11 +0000
+
+nextbox (0.0.2-5) groovy; urgency=low
+
   * add runtime dependencies; add python package: nextbox_daemon.api
 
  -- Markus Meissner (Debian) <coder@safemailbox.de>  Sun, 5 Mar 2021 15:32:11 +0000
