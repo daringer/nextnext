@@ -33,7 +33,7 @@ services:
       - redis
 
   cron:
-    image: nextcloud:21.0.0-apache
+    image: nextcloud:20.0.8-apache
     restart: always
     volumes:
       - nextcloud:/var/www/html

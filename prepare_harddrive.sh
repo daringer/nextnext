@@ -31,11 +31,10 @@ mkfs.ext4 -L NextBoxHardDisk ${dev}1
 # mount & chmod 775
 mkdir -p tmp
 mount ${dev}1 tmp
-mkdir -p tmp/srv/nextbox
-mkdir -p tmp/srv/nextcloud
-mkdir -p tmp/srv/mariadb
+mkdir -p tmp/nextbox
+mkdir -p tmp/nextcloud
+mkdir -p tmp/mariadb
 mkdir -p tmp/varlog
-mkdir -p tmp/varlibdocker
 mkdir -p tmp/varcache
 chmod 775 tmp
 umount tmp

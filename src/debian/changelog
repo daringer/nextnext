@@ -1,9 +1,14 @@
+nextbox (0.0.2-8) groovy; urgency=low
+
+  * update nextbox-compose.yaml (nc version);
+
+ -- Markus Meissner (Debian) <coder@safemailbox.de>  Sun, 5 Mar 2021 15:32:11 +0000
+
 nextbox (0.0.2-7) groovy; urgency=low
 
   * update nextbox-compose.yaml; db.env
 
  -- Markus Meissner (Debian) <coder@safemailbox.de>  Sun, 5 Mar 2021 15:32:11 +0000
-
 
 nextbox (0.0.2-6) groovy; urgency=low
 
