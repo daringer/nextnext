@@ -46,11 +46,11 @@ class RawBackupRestore:
             log.info("dry-run reports 0 files to transfer")
 
         def parse(line, data_dct):
-            data_dct.setdefault("line", -5)
+            data_dct.setdefault("line", 0)
             data_dct.setdefault("ratio", 0)
             data_dct["num_files"] = num_files
             data_dct["line"] += 1
-            data_dct["ratio"] = min(1, max(0, data_dct["line"] / num_files)) 
+            data_dct["ratio"] = round(min(1, max(0, data_dct["line"] / num_files)), 2) * 100
 
         cmd = self.rsync_base_cmd.format(src=src_dir, tar=tar_dir)
         self.rsync_proc = CommandRunner(cmd, cb_parse=parse)
@@ -142,9 +142,19 @@ class RawBackupRestore:
 
         self.nc.set_maintenance_on()
         
+        # drop database
         cmd = self.db_cmd.format(pwd=pwd, sql="DROP DATABASE nextcloud")
+        cr = CommandRunner(cmd, block=True)
 
+        # create new database
+        cmd = self.db_cmd.format(pwd=pwd, sql="CREATE DATABASE nextcloud")
+        cr = CommandRunner(cmd, block=True)
 
+        # grant 'nextcloud' permissions to user: 'nextcloud'
+        cmd = self.db_cmd.format(pwd=pwd, sql="GRANT ALL PRIVILEGES ON nextcloud.* TO 'nextcloud'@'localhost'")
+        cr = CommandRunner(cmd, block=True)
+
+        # import sql-dump
         cmd = self.db_import_cmd.format(pwd=pwd, path=src_path)
         cr = CommandRunner(cmd, block=True, shell=True)
         
@@ -165,11 +175,11 @@ if __name__ == "__main__":
         time.sleep(0.3)
     print(back.rsync_proc.parsed)
         
-    print(back.rsync_proc.returncode)
-    print(back.rsync_proc.output)
-    print(back.rsync_proc.cmd)
-    print(back.rsync_proc.get_new_output())
-    print(back.rsync_proc.output)
+    #print(back.rsync_proc.returncode)
+    #print(back.rsync_proc.output)
+    #print(back.rsync_proc.cmd)
+    #print(back.rsync_proc.get_new_output())
+    #print(back.rsync_proc.output)
 
     #
     #	# First, drop the database (if any)

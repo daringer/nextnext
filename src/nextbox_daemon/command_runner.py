@@ -106,7 +106,6 @@ class CommandRunner:
             pass
 
         self._output.extend(out)
-        print("INSIDE: ", out)
         return out
 
     def tail(self, num_lines=10):
