@@ -28,9 +28,9 @@ update-app: src/app/nextbox/src/
 	make -C src dev
 	ssh $(DEV_ROOT_USER)@$(DEV_DEVICE) -- rm -rf /srv/nextcloud/custom_apps/nextbox/js
 	rsync -r --info=progress --exclude='node_modules/*' --exclude='vendor/*' src/app/nextbox/js \
-		$(DEV_ROOT_USER)@$(DEV_DEVICE):/srv/nextcloud/custom_apps/nextbox
+		$(DEV_ROOT_USER)@$(DEV_DEVICE):/usr/lib/nextbox-app/
 	rsync -r --info=progress --exclude='node_modules/*' --exclude='vendor/*' src/app/nextbox/lib/Controller \
-		$(DEV_ROOT_USER)@$(DEV_DEVICE):/srv/nextcloud/custom_apps/nextbox/lib
+		$(DEV_ROOT_USER)@$(DEV_DEVICE):/usr/lib/nextbox-app/
 	#ssh root@192.168.10.50 -- chown root.root -R /srv/nextcloud/custom_apps/nextbox
 
 watch-update-app:
