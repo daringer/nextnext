@@ -1,3 +1,10 @@
+nextbox (0.0.2-10) groovy; urgency=low
+
+  * move app-bind-mount to nextcloud/custom_apps
+
+ -- Markus Meissner (Debian) <coder@safemailbox.de>  Sun, 5 Mar 2021 15:32:11 +0000
+
+
 nextbox (0.0.2-9) groovy; urgency=low
 
   * nextbox-compose.yaml binds global nextbox-app to new location
