@@ -32,7 +32,8 @@ mkfs.ext4 -L NextBoxHardDisk ${dev}1
 mkdir -p tmp
 mount ${dev}1 tmp
 mkdir -p tmp/nextbox
-mkdir -p tmp/nextcloud
+mkdir -p tmp/nextcloud/custom_apps
+chown 33.0 tmp/nextcloud/custom_apps
 mkdir -p tmp/mariadb
 mkdir -p tmp/varlog
 mkdir -p tmp/varcache
