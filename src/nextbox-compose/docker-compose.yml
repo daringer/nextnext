@@ -23,7 +23,7 @@ services:
       - 80:80
     volumes:
       - nextcloud:/var/www/html
-      - nextbox-app:/var/www/html/apps/nextbox
+      - nextbox-app:/var/www/html/custom_apps/nextbox
     environment:
       - MYSQL_HOST=db
       - REDIS_HOST=redis
