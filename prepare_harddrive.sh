@@ -33,11 +33,16 @@ mkdir -p tmp
 mount ${dev}1 tmp
 mkdir -p tmp/nextbox
 
+# ensure custom_apps has the correct owner
 mkdir -p tmp/nextcloud/custom_apps
 chown 33.0 tmp/nextcloud/custom_apps
 
 mkdir -p tmp/mariadb
-mkdir -p tmp/varlog
+
+# also add "journal" to ensure persistance
+mkdir -p tmp/varlog/journal
+
+
 mkdir -p tmp/varcache
 chmod 775 tmp
 umount tmp
