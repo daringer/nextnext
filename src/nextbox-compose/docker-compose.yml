@@ -23,6 +23,7 @@ services:
       - 80:80
     volumes:
       - nextcloud:/var/www/html
+      - nextbox-app:/var/www/html/apps/nextbox
     environment:
       - MYSQL_HOST=db
       - REDIS_HOST=redis
@@ -63,3 +64,10 @@ volumes:
       type: none
       o: bind
       device: /srv/nextcloud
+  
+  nextbox-app:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /usr/lib/nextbox-app
