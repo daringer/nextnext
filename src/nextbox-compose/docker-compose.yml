@@ -24,6 +24,7 @@ services:
     volumes:
       - nextcloud:/var/www/html
       - nextbox-app:/var/www/html/custom_apps/nextbox
+      - apache-conf:/etc/apache2
     environment:
       - MYSQL_HOST=db
       - REDIS_HOST=redis
@@ -71,3 +72,12 @@ volumes:
       type: none
       o: bind
       device: /usr/lib/nextbox-app
+
+  apache-conf:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /srv/apache2
+
+

@@ -1,3 +1,10 @@
+nextbox (0.1.1-1) groovy; urgency=low
+
+  * fix backwards-proxy-key-gen; docker-compose expose apache2-dir
+
+ -- Markus Meissner (Debian) <coder@safemailbox.de>  Sun, 5 Mar 2021 15:32:11 +0000
+
+
 nextbox (0.1.0-1) groovy; urgency=low
 
   * backup updates, version bump
