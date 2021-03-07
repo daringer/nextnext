@@ -119,7 +119,7 @@ class TrustedDomainsJob(BaseJob):
     name = "TrustedDomains"
     interval = 471
 
-    static_entries = ["192.168.*.*", "10.*.*.*", "172.16.*.*", "172.18.*.*"]
+    static_entries = ["192.168.*.*", "10.*.*.*", "172.16.*.*", "172.18.*.*", "nextbox.local"]
 
     def __init__(self):
         self.nc = Nextcloud()
