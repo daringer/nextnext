@@ -13,7 +13,7 @@ GET_EXT_IP6_URL = "http://v6.ipv6-test.com/api/myip.php"
 PROXY_REGISTER_URL = "https://nextbox.link/register"
 PROXY_KEY_PATH = "/srv/nextbox/proxy_key"
 PROXY_PUBKEY_PATH = PROXY_KEY_PATH + ".pub"
-PROXY_KEYGEN_CMD = ["ssh-keygen", "-b", "4096", "-t", "rsa", "-f", PROXY_KEY_PATH, "-q", "-N", "''"]
+PROXY_KEYGEN_CMD = ["ssh-keygen", "-b", "4096", "-t", "rsa", "-f", PROXY_KEY_PATH, "-q", "-N", ""]
 
 CONFIG_PATH = "/srv/nextbox/nextbox.conf"
 LOG_FILENAME = "/srv/nextbox/nextbox.log"

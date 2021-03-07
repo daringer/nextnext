@@ -42,9 +42,14 @@ mkdir -p tmp/mariadb
 # also add "journal" to ensure persistance
 mkdir -p tmp/varlog/journal
 
+# apache config dir (from inside the nextcloud docker)
+mkdir -p tmp/apache2
 
+# /var/cache
 mkdir -p tmp/varcache
+
 chmod 775 tmp
+
 umount tmp
 
 
